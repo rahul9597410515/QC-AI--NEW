@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { FileText, Download, Calendar, Clock, RefreshCw, ChevronRight } from 'lucide-react';
 import { generateDailyData } from '../data/historicalData';
+import { api } from '../lib/api';
 
 const TEMPLATES = [
     { id: 'daily', label: 'Daily Summary', icon: '📊', desc: 'Overview of all production lines for the day' },
@@ -85,6 +86,13 @@ export default function Reports() {
     const [selectedRange, setSelectedRange] = useState('Last 7 Days');
     const [selectedShift, setSelectedShift] = useState('All Shifts');
     const [scheduled, setScheduled] = useState({ daily: true, weekly: false });
+    const [quickStats, setQuickStats] = useState({ passRate: 97.2, defectTrend: '-12%', compliance: 99.1, mtd: 47 });
+
+    useEffect(() => {
+        api.getReportSummary().then(s => {
+            setQuickStats({ passRate: s.passRate, defectTrend: `↓ ${(100 - s.passRate).toFixed(1)}%`, compliance: 99.1, mtd: 47 });
+        }).catch(() => { });
+    }, []);
 
     function downloadPDF() {
         const printStyle = document.createElement('style');
@@ -94,15 +102,24 @@ export default function Reports() {
         document.head.removeChild(printStyle);
     }
 
-    function downloadCSV() {
-        const data = generateDailyData(7);
-        const headers = ['Date', 'Inspections', 'Defects', 'Defect Rate', 'Quality'];
-        const rows = data.map(d => [d.date, d.inspections, d.defects, d.defectRate, d.quality].join(','));
-        const csv = [headers.join(','), ...rows].join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = `qc-report-${selectedTemplate}.csv`; a.click();
-        URL.revokeObjectURL(url);
+    async function downloadCSV() {
+        try {
+            const resp = await api.exportReport({ range: selectedRange });
+            const blob = await resp.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `qc-report-${selectedTemplate}.csv`; a.click();
+            URL.revokeObjectURL(url);
+        } catch {
+            // Fallback to local generation
+            const data = generateDailyData(7);
+            const headers = ['Date', 'Inspections', 'Defects', 'Defect Rate', 'Quality'];
+            const rows = data.map(d => [d.date, d.inspections, d.defects, d.defectRate, d.quality].join(','));
+            const csv = [headers.join(','), ...rows].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = `qc-report-${selectedTemplate}.csv`; a.click();
+            URL.revokeObjectURL(url);
+        }
     }
 
     return (
@@ -199,10 +216,10 @@ export default function Reports() {
                             <Clock size={14} style={{ marginRight: 6 }} />Quick Stats
                         </h3>
                         {[
-                            { label: 'Reports Generated (MTD)', value: '47' },
-                            { label: 'Avg. Quality Score', value: '97.2%' },
-                            { label: 'Defect Trend', value: '↓ 12%' },
-                            { label: 'Compliance Rate', value: '99.1%' },
+                            { label: 'Reports Generated (MTD)', value: quickStats.mtd.toString() },
+                            { label: 'Avg. Quality Score', value: `${quickStats.passRate}%` },
+                            { label: 'Defect Trend', value: quickStats.defectTrend },
+                            { label: 'Compliance Rate', value: `${quickStats.compliance}%` },
                         ].map(({ label, value }) => (
                             <div key={label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(30,46,80,0.5)' }}>
                                 <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>{label}</span>

@@ -5,6 +5,7 @@ import {
 } from 'recharts';
 import { Download, TrendingUp } from 'lucide-react';
 import { generateDailyData, DEFECT_TYPES_BREAKDOWN, generateHeatmapData } from '../data/historicalData';
+import { api } from '../lib/api';
 
 const RANGES = ['Today', '7D', '30D'];
 
@@ -78,25 +79,27 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 
 export default function DefectAnalytics() {
     const [range, setRange] = useState('30D');
-    const [dailyData] = useState(() => generateDailyData(30));
+    const [dailyData, setDailyData] = useState(() => generateDailyData(30));
+    const [defectBreakdown, setDefectBreakdown] = useState(DEFECT_TYPES_BREAKDOWN);
+    const [heatmap, setHeatmap] = useState(() => generateHeatmapData());
     const days = range === 'Today' ? 1 : range === '7D' ? 7 : 30;
     const sliced = dailyData.slice(-days);
     const qualityScore = Math.round(sliced.reduce((s, d) => s + d.quality, 0) / sliced.length * 10) / 10;
 
-    // Scale defect counts based on range
-    const defectBreakdown = DEFECT_TYPES_BREAKDOWN.map(d => ({
-        ...d,
-        count: Math.round(d.count * (days / 30) * (0.9 + Math.random() * 0.2)) // Add some variance
-    }));
-
-    // Regenerate heatmap slightly different for each range
-    const [heatmap, setHeatmap] = useState(() => generateHeatmapData());
-
-
-
-    // Effect to update heatmap when range changes
+    // Load data from backend
     useEffect(() => {
-        setHeatmap(generateHeatmapData());
+        const d = range === 'Today' ? 1 : range === '7D' ? 7 : 30;
+        api.getDaily(d).then(data => {
+            if (Array.isArray(data) && data.length > 0) setDailyData(data as typeof dailyData);
+        }).catch(() => { setDailyData(generateDailyData(d)); });
+
+        api.getDefectTypes().then(data => {
+            if (Array.isArray(data) && data.length > 0) setDefectBreakdown(data as typeof defectBreakdown);
+        }).catch(() => { setDefectBreakdown(DEFECT_TYPES_BREAKDOWN); });
+
+        api.getHeatmap().then(data => {
+            if (Array.isArray(data) && data.length > 0) setHeatmap(data as number[][]);
+        }).catch(() => { setHeatmap(generateHeatmapData()); });
     }, [range]);
 
     function downloadCSV() {

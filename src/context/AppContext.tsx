@@ -1,5 +1,7 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import type { DefectEvent } from '../data/defectStream';
+import { api } from '../lib/api';
+import { getSocket } from '../lib/socket';
 
 export type Environment = 'Automotive' | 'Electronics' | 'Textile' | 'Pharma';
 
@@ -10,6 +12,7 @@ export interface Alert {
     source: string;
     timestamp: Date;
     acknowledged: boolean;
+    dismissed?: boolean;
 }
 
 interface AppContextType {
@@ -40,17 +43,47 @@ const PRODUCTS_BY_ENV: Record<Environment, string[]> = {
 
 export { PRODUCTS_BY_ENV };
 
+type RawAlert = { id: string; severity: string; message: string; source: string; timestamp: string; acknowledged: boolean };
+
+function toAlert(raw: RawAlert): Alert {
+    return {
+        ...raw,
+        severity: raw.severity as Alert['severity'],
+        timestamp: new Date(raw.timestamp),
+    };
+}
+
 export function AppProvider({ children }: { children: ReactNode }) {
     const [environment, setEnvironmentState] = useState<Environment>('Automotive');
     const [productType, setProductType] = useState<string>('Engine Block');
     const [inspectionsPaused, setInspectionsPaused] = useState(false);
-    const [alerts, setAlerts] = useState<Alert[]>([
-        { id: 'a1', severity: 'warning', message: 'Line B defect rate exceeded 4%', source: 'Line B', timestamp: new Date(Date.now() - 120000), acknowledged: false },
-        { id: 'a2', severity: 'critical', message: 'Temperature sensor spike on Camera 3', source: 'Sensor', timestamp: new Date(Date.now() - 60000), acknowledged: false },
-        { id: 'a3', severity: 'info', message: 'Line C scheduled maintenance in 2 hours', source: 'System', timestamp: new Date(Date.now() - 300000), acknowledged: false },
-    ]);
+    const [alerts, setAlerts] = useState<Alert[]>([]);
     const [recentDefects, setRecentDefects] = useState<DefectEvent[]>([]);
     const [totalInspections, setTotalInspections] = useState(9332);
+
+    // Load initial alerts from backend
+    useEffect(() => {
+        api.getAlerts().then((data) => {
+            setAlerts((data as RawAlert[]).map(toAlert));
+        }).catch(() => {
+            // Fallback seed alerts if backend is unavailable
+            setAlerts([
+                { id: 'a1', severity: 'warning', message: 'Line B defect rate exceeded 4%', source: 'Line B', timestamp: new Date(Date.now() - 120000), acknowledged: false },
+                { id: 'a2', severity: 'critical', message: 'Temperature sensor spike on Camera 3', source: 'Sensor', timestamp: new Date(Date.now() - 60000), acknowledged: false },
+                { id: 'a3', severity: 'info', message: 'Line C scheduled maintenance in 2 hours', source: 'System', timestamp: new Date(Date.now() - 300000), acknowledged: false },
+            ]);
+        });
+    }, []);
+
+    // Subscribe to real-time alert events from backend
+    useEffect(() => {
+        const socket = getSocket();
+        const handler = (raw: RawAlert) => {
+            setAlerts(prev => [toAlert(raw), ...prev.slice(0, 49)]);
+        };
+        socket.on('alert:new', handler);
+        return () => { socket.off('alert:new', handler); };
+    }, []);
 
     const setEnvironment = useCallback((env: Environment) => {
         setEnvironmentState(env);
@@ -68,12 +101,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
         setAlerts(prev => [newAlert, ...prev.slice(0, 49)]);
     }, []);
 
-    const acknowledgeAlert = useCallback((id: string) => {
+    const acknowledgeAlert = useCallback(async (id: string) => {
         setAlerts(prev => prev.map(a => a.id === id ? { ...a, acknowledged: true } : a));
+        await api.acknowledgeAlert(id).catch(() => {/* ignore if backend unavail */ });
     }, []);
 
-    const dismissAlert = useCallback((id: string) => {
+    const dismissAlert = useCallback(async (id: string) => {
         setAlerts(prev => prev.filter(a => a.id !== id));
+        await api.dismissAlert(id).catch(() => {/* ignore if backend unavail */ });
     }, []);
 
     const addDefect = useCallback((d: DefectEvent) => {

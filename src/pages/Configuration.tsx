@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { Plus, Trash2, ChevronRight, Cpu, Camera, Bell, Sliders } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Plus, Trash2, ChevronRight, Cpu, Camera, Bell, Sliders, Save } from 'lucide-react';
 import { useApp, PRODUCTS_BY_ENV } from '../context/AppContext';
 import type { Environment } from '../context/AppContext';
+import { api } from '../lib/api';
 
 const ENV_DESCRIPTIONS: Record<Environment, string> = {
     Automotive: 'Vehicle parts, chassis, engine components with tight tolerances',
@@ -33,6 +34,36 @@ export default function Configuration() {
     ]);
     const [notifs, setNotifs] = useState({ email: true, inApp: true, webhook: false, critical: true, warning: true, info: false });
     const [activeSection, setActiveSection] = useState<'environment' | 'defects' | 'cameras' | 'notifications'>('environment');
+    const [savingConfig, setSavingConfig] = useState(false);
+    const [saveMsg, setSaveMsg] = useState('');
+
+    // Load thresholds for current environment from backend
+    useEffect(() => {
+        api.getConfig().then(configs => {
+            const cfg = configs.find(c => c.environment === environment);
+            if (cfg) {
+                const t = cfg.thresholds as Record<string, Record<string, number>>;
+                // Map backend thresholds to sensitivity sliders
+                const mapped: Record<string, number> = { Global: 75 };
+                if (t['temperature']) mapped['temperature'] = Math.round(t['temperature']['warnMax'] / 100 * 100);
+                setSensitivity(prev => ({ ...prev, ...mapped }));
+            }
+        }).catch(() => { });
+    }, [environment]);
+
+    async function saveThresholds() {
+        setSavingConfig(true);
+        try {
+            await api.updateConfig(environment, {
+                temperature: { warnMax: 90, critMax: 100 },
+                vibration: { warnMax: 6, critMax: 8 },
+                sensitivity,
+            });
+            setSaveMsg('✓ Saved');
+            setTimeout(() => setSaveMsg(''), 2000);
+        } catch { setSaveMsg('✗ Save failed'); }
+        finally { setSavingConfig(false); }
+    }
 
     const addDefectClass = () => {
         if (newClass.trim() && !defectClasses.includes(newClass.trim())) {
@@ -153,6 +184,12 @@ export default function Configuration() {
                                             onClick={() => setDefectClasses(c => c.filter(x => x !== cls))}><Trash2 size={14} /></button>
                                     </div>
                                 ))}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 12 }}>
+                                <button className="btn btn-primary" onClick={saveThresholds} disabled={savingConfig}>
+                                    <Save size={14} /> {savingConfig ? 'Saving…' : 'Save Config'}
+                                </button>
+                                {saveMsg && <span style={{ fontSize: '0.8rem', color: saveMsg.startsWith('✓') ? 'var(--accent-green)' : 'var(--accent-red)' }}>{saveMsg}</span>}
                             </div>
                         </div>
                     </div>

@@ -1,54 +1,81 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { generateDefectEvent, generateBoundingBoxes } from '../data/defectStream';
+import { generateBoundingBoxes } from '../data/defectStream';
 import type { DefectEvent, BoundingBox } from '../data/defectStream';
-import { generateSensorReadings, generateSensorSnapshot } from '../data/sensorStream';
 import type { SensorReading, SensorSnapshot } from '../data/sensorStream';
+import { generateSensorReadings, generateSensorSnapshot } from '../data/sensorStream';
 import { useApp } from '../context/AppContext';
+import { getSocket } from '../lib/socket';
+import { api } from '../lib/api';
 
-// ── useSimulatedFeed ──────────────────────────────
-export function useSimulatedFeed(intervalMs = 4000) {
+// ── useSimulatedFeed — now driven by Socket.IO ─────────────────
+export function useSimulatedFeed() {
     const { environment, inspectionsPaused, addDefect, incrementInspections } = useApp();
     const [latestDefect, setLatestDefect] = useState<DefectEvent | null>(null);
 
     useEffect(() => {
         if (inspectionsPaused) return;
-        const id = setInterval(() => {
-            const evt = generateDefectEvent(environment);
-            setLatestDefect(evt);
-            addDefect(evt);
+
+        const socket = getSocket();
+        // Tell backend which environment we care about
+        socket.emit('set-environment', environment);
+
+        const handler = (evt: DefectEvent) => {
+            // backend sends timestamp as string — convert it
+            const defect: DefectEvent = {
+                ...evt,
+                timestamp: new Date((evt as unknown as { timestamp: string }).timestamp ?? Date.now()),
+            };
+            setLatestDefect(defect);
+            addDefect(defect);
             incrementInspections(Math.floor(Math.random() * 3) + 1);
-        }, intervalMs + Math.random() * 2000);
-        return () => clearInterval(id);
-    }, [environment, inspectionsPaused, intervalMs, addDefect, incrementInspections]);
+        };
+
+        socket.on('defect:new', handler);
+        return () => { socket.off('defect:new', handler); };
+    }, [environment, inspectionsPaused, addDefect, incrementInspections]);
 
     return latestDefect;
 }
 
-// ── useSensorStream ──────────────────────────────
-export function useSensorStream(intervalMs = 2000) {
+// ── useSensorStream — now driven by Socket.IO ─────────────────
+export function useSensorStream() {
     const [readings, setReadings] = useState<SensorReading[]>(generateSensorReadings);
-    const [history, setHistory] = useState<SensorSnapshot[]>(() => {
-        return Array.from({ length: 30 }, (_, i) => {
+    const [history, setHistory] = useState<SensorSnapshot[]>(() =>
+        Array.from({ length: 30 }, (_, i) => {
             const snap = generateSensorSnapshot();
-            snap.timestamp = new Date(Date.now() - (30 - i) * intervalMs);
+            snap.timestamp = new Date(Date.now() - (30 - i) * 2000);
             return snap;
-        });
-    });
+        })
+    );
 
     useEffect(() => {
-        const id = setInterval(() => {
-            const newReadings = generateSensorReadings();
-            setReadings(newReadings);
-            const snap = generateSensorSnapshot();
+        // Initial REST load for sensor state
+        api.getSensorsLatest().then(data => {
+            if (Array.isArray(data) && data.length > 0) setReadings(data as SensorReading[]);
+        }).catch(() => {/* fallback to local mock */ });
+
+        const socket = getSocket();
+
+        const handler = (data: SensorReading[]) => {
+            setReadings(data);
+            // Build a snapshot from readings
+            const snap: SensorSnapshot = {
+                timestamp: new Date(),
+                temperature: 0, vibration: 0, pressure: 0,
+                humidity: 0, speed: 0, current: 0,
+            };
+            data.forEach(r => { (snap as unknown as Record<string, number>)[r.key] = r.value; });
             setHistory(prev => [...prev.slice(-59), snap]);
-        }, intervalMs);
-        return () => clearInterval(id);
-    }, [intervalMs]);
+        };
+
+        socket.on('sensor:update', handler);
+        return () => { socket.off('sensor:update', handler); };
+    }, []);
 
     return { readings, history };
 }
 
-// ── useLiveCanvas ──────────────────────────────
+// ── useLiveCanvas — unchanged (canvas animation) ──────────────
 export function useLiveCanvas(canvasRef: React.RefObject<HTMLCanvasElement | null>, camera: number) {
     const [boxes, setBoxes] = useState<BoundingBox[]>([]);
     const frameRef = useRef(0);
@@ -61,11 +88,11 @@ export function useLiveCanvas(canvasRef: React.RefObject<HTMLCanvasElement | nul
             const newBoxes = generateBoundingBoxes(Math.floor(Math.random() * 3) + 1);
             boxAgesRef.current = [...boxAgesRef.current.filter(b => b.age > 0), ...newBoxes];
             setBoxes([...boxAgesRef.current]);
-        }, 3500 + Math.random() * 1500);
+        }, 3500);
         return () => clearInterval(id);
     }, [camera]);
 
-    // Animate canvas background (simulated product texture)
+    // Animate canvas background
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
@@ -78,17 +105,14 @@ export function useLiveCanvas(canvasRef: React.RefObject<HTMLCanvasElement | nul
             const H = canvas.height;
             frameRef.current++;
 
-            // Dark textured background
             ctx.fillStyle = '#0A0F1E';
             ctx.fillRect(0, 0, W, H);
 
-            // Grid lines
             ctx.strokeStyle = 'rgba(0,212,255,0.06)';
             ctx.lineWidth = 1;
             for (let x = 0; x < W; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
             for (let y = 0; y < H; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
 
-            // Product surface simulation (noise texture)
             const imageData = ctx.createImageData(W, H);
             const data = imageData.data;
             const t = frameRef.current;
@@ -104,7 +128,6 @@ export function useLiveCanvas(canvasRef: React.RefObject<HTMLCanvasElement | nul
             }
             ctx.putImageData(imageData, 0, 0);
 
-            // Scanline
             const scanY = (t * 2.5) % (H + 4);
             const grad = ctx.createLinearGradient(0, scanY - 2, 0, scanY + 4);
             grad.addColorStop(0, 'rgba(0,212,255,0)');
@@ -113,7 +136,6 @@ export function useLiveCanvas(canvasRef: React.RefObject<HTMLCanvasElement | nul
             ctx.fillStyle = grad;
             ctx.fillRect(0, scanY - 2, W, 6);
 
-            // Corner brackets
             const bs = 20;
             ctx.strokeStyle = 'rgba(0,212,255,0.7)';
             ctx.lineWidth = 2;
