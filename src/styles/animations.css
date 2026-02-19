@@ -1,0 +1,363 @@
+/* ============================================
+   QC AI — Keyframe Animations
+   ============================================ */
+
+/* Pulse animations for status dots */
+@keyframes pulse-green {
+
+    0%,
+    100% {
+        box-shadow: 0 0 4px var(--accent-green), 0 0 8px rgba(16, 185, 129, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 8px var(--accent-green), 0 0 16px rgba(16, 185, 129, 0.6);
+    }
+}
+
+@keyframes pulse-yellow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 4px var(--accent-yellow), 0 0 8px rgba(245, 158, 11, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 8px var(--accent-yellow), 0 0 16px rgba(245, 158, 11, 0.6);
+    }
+}
+
+@keyframes pulse-red {
+
+    0%,
+    100% {
+        box-shadow: 0 0 4px var(--accent-red), 0 0 8px rgba(239, 68, 68, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 8px var(--accent-red), 0 0 16px rgba(239, 68, 68, 0.7);
+    }
+}
+
+@keyframes pulse-cyan {
+
+    0%,
+    100% {
+        box-shadow: 0 0 4px var(--accent-cyan), 0 0 8px rgba(0, 212, 255, 0.4);
+    }
+
+    50% {
+        box-shadow: 0 0 12px var(--accent-cyan), 0 0 24px rgba(0, 212, 255, 0.6);
+    }
+}
+
+/* Glow pulse for critical alerts */
+@keyframes pulse-glow-red {
+
+    0%,
+    100% {
+        box-shadow: 0 0 8px rgba(239, 68, 68, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+    }
+}
+
+/* Spinning loader */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Fade fade-in */
+@keyframes fade-in {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+/* Slide up for modals */
+@keyframes slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Slide down for sidebar nav items */
+@keyframes slide-in-left {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Count up on KPI mount */
+@keyframes count-up {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Scanline sweep for camera feed */
+@keyframes scanline {
+    0% {
+        top: -4px;
+    }
+
+    100% {
+        top: 100%;
+    }
+}
+
+/* Scanline flicker */
+@keyframes scanline-flicker {
+
+    0%,
+    100% {
+        opacity: 0.08;
+    }
+
+    50% {
+        opacity: 0.13;
+    }
+}
+
+/* Camera grid lines fade */
+@keyframes grid-fade {
+
+    0%,
+    100% {
+        opacity: 0.04;
+    }
+
+    50% {
+        opacity: 0.08;
+    }
+}
+
+/* Bounding box detection */
+@keyframes bbox-appear {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+@keyframes bbox-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.8);
+    }
+
+    50% {
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.5), 0 0 12px rgba(239, 68, 68, 0.3);
+    }
+}
+
+/* Sidebar logo glow */
+@keyframes logo-glow {
+
+    0%,
+    100% {
+        filter: drop-shadow(0 0 6px rgba(0, 212, 255, 0.5));
+    }
+
+    50% {
+        filter: drop-shadow(0 0 14px rgba(0, 212, 255, 0.8));
+    }
+}
+
+/* Defect feed ticker item */
+@keyframes feed-slide-in {
+    from {
+        opacity: 0;
+        transform: translateX(-12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Alert slide down */
+@keyframes alert-slide-down {
+    from {
+        opacity: 0;
+        transform: translateY(-12px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Page transition */
+@keyframes page-fade-in {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Gauge arc draw */
+@keyframes gauge-draw {
+    from {
+        stroke-dashoffset: 251;
+    }
+
+    to {
+        stroke-dashoffset: var(--gauge-offset);
+    }
+}
+
+/* Shimmer for loading states */
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+/* Float for ambient decoration */
+@keyframes float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-6px);
+    }
+}
+
+/* Number count up */
+@keyframes number-appear {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ============ ANIMATION UTILITY CLASSES ============ */
+
+.animate-fade-in {
+    animation: fade-in 0.3s ease both;
+}
+
+.animate-page {
+    animation: page-fade-in 0.35s ease both;
+}
+
+.animate-slide-in {
+    animation: slide-in-left 0.3s ease both;
+}
+
+.animate-count-up {
+    animation: count-up 0.4s ease both;
+}
+
+/* Staggered nav items */
+.nav-item:nth-child(1) {
+    animation-delay: 0.05s;
+}
+
+.nav-item:nth-child(2) {
+    animation-delay: 0.10s;
+}
+
+.nav-item:nth-child(3) {
+    animation-delay: 0.15s;
+}
+
+.nav-item:nth-child(4) {
+    animation-delay: 0.20s;
+}
+
+.nav-item:nth-child(5) {
+    animation-delay: 0.25s;
+}
+
+.nav-item:nth-child(6) {
+    animation-delay: 0.30s;
+}
+
+/* KPI count-up stagger */
+.kpi-card:nth-child(1) .kpi-value {
+    animation-delay: 0.1s;
+}
+
+.kpi-card:nth-child(2) .kpi-value {
+    animation-delay: 0.2s;
+}
+
+.kpi-card:nth-child(3) .kpi-value {
+    animation-delay: 0.3s;
+}
+
+.kpi-card:nth-child(4) .kpi-value {
+    animation-delay: 0.4s;
+}
+
+/* Spinning loader class */
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+/* Logo glow */
+.logo-glow {
+    animation: logo-glow 3s ease-in-out infinite;
+}
+
+/* Live pulse dot */
+.pulse-live {
+    animation: pulse-green 2s ease-in-out infinite;
+}
