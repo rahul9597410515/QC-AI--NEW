@@ -1,0 +1,61 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model DefectEvent {
+  id          String   @id @default(cuid())
+  type        String
+  severity    String   // critical | warning | info
+  line        String
+  camera      Int
+  confidence  Float
+  x           Float
+  y           Float
+  width       Float
+  height      Float
+  product     String
+  environment String
+  imageUrl    String?
+  timestamp   DateTime @default(now())
+}
+
+model SensorSnapshot {
+  id          String   @id @default(cuid())
+  temperature Float
+  vibration   Float
+  pressure    Float
+  humidity    Float
+  speed       Float
+  current     Float
+  timestamp   DateTime @default(now())
+}
+
+model Alert {
+  id           String   @id @default(cuid())
+  severity     String
+  message      String
+  source       String
+  acknowledged Boolean  @default(false)
+  dismissed    Boolean  @default(false)
+  timestamp    DateTime @default(now())
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         String   @default("operator")
+  createdAt    DateTime @default(now())
+}
+
+model SystemConfig {
+  id          String   @id @default(cuid())
+  environment String   @unique  // Automotive | Electronics | Textile | Pharma
+  thresholds  String   @default("{}")  // JSON string (SQLite has no JSON type)
+  updatedAt   DateTime @updatedAt
+}

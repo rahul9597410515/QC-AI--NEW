@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import {
-    ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
+    ComposedChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
-import { AlertTriangle, CheckCircle, Info, Bell, X, Eye } from 'lucide-react';
+import { AlertTriangle, Info, Bell, X, Eye } from 'lucide-react';
 import { useSensorStream } from '../hooks/useLiveData';
 import { useApp } from '../context/AppContext';
 

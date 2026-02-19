@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
     PieChart, Pie, Cell, BarChart, Bar, Legend
@@ -79,10 +79,25 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 export default function DefectAnalytics() {
     const [range, setRange] = useState('30D');
     const [dailyData] = useState(() => generateDailyData(30));
-    const [heatmap] = useState(() => generateHeatmapData());
     const days = range === 'Today' ? 1 : range === '7D' ? 7 : 30;
     const sliced = dailyData.slice(-days);
     const qualityScore = Math.round(sliced.reduce((s, d) => s + d.quality, 0) / sliced.length * 10) / 10;
+
+    // Scale defect counts based on range
+    const defectBreakdown = DEFECT_TYPES_BREAKDOWN.map(d => ({
+        ...d,
+        count: Math.round(d.count * (days / 30) * (0.9 + Math.random() * 0.2)) // Add some variance
+    }));
+
+    // Regenerate heatmap slightly different for each range
+    const [heatmap, setHeatmap] = useState(() => generateHeatmapData());
+
+
+
+    // Effect to update heatmap when range changes
+    useEffect(() => {
+        setHeatmap(generateHeatmapData());
+    }, [range]);
 
     function downloadCSV() {
         const headers = ['Date', 'Inspections', 'Defects', 'Defect Rate', 'Quality'];
@@ -143,12 +158,12 @@ export default function DefectAnalytics() {
                     </div>
                     <div style={{ height: 200 }}>
                         <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={DEFECT_TYPES_BREAKDOWN} layout="vertical" margin={{ top: 0, right: 20, left: 20, bottom: 0 }}>
+                            <BarChart data={defectBreakdown} layout="vertical" margin={{ top: 0, right: 20, left: 20, bottom: 0 }}>
                                 <XAxis type="number" tick={{ fill: '#94A3B8', fontSize: 10 }} tickLine={false} />
                                 <YAxis type="category" dataKey="name" tick={{ fill: '#94A3B8', fontSize: 10 }} tickLine={false} width={90} />
                                 <Tooltip content={<CustomTooltip />} />
                                 <Bar dataKey="count" name="Count" radius={[0, 4, 4, 0]}>
-                                    {DEFECT_TYPES_BREAKDOWN.map((entry, i) => (
+                                    {defectBreakdown.map((entry, i) => (
                                         <Cell key={i} fill={entry.color} />
                                     ))}
                                 </Bar>
@@ -194,8 +209,8 @@ export default function DefectAnalytics() {
                     <div style={{ height: 220 }}>
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
-                                <Pie data={DEFECT_TYPES_BREAKDOWN} dataKey="count" nameKey="name" cx="40%" cy="50%" outerRadius={80} innerRadius={48}>
-                                    {DEFECT_TYPES_BREAKDOWN.map((entry, i) => (
+                                <Pie data={defectBreakdown} dataKey="count" nameKey="name" cx="40%" cy="50%" outerRadius={80} innerRadius={48}>
+                                    {defectBreakdown.map((entry, i) => (
                                         <Cell key={i} fill={entry.color} />
                                     ))}
                                 </Pie>
