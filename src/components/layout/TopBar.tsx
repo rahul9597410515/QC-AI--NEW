@@ -80,7 +80,11 @@ export default function TopBar() {
 
                 {/* Notification bell */}
                 <div className="topbar-notif">
-                    <button className="btn btn-icon btn-ghost topbar-bell">
+                    <button
+                        className="btn btn-icon btn-ghost topbar-bell"
+                        onClick={() => navigate('/sensors')}
+                        title="View Alerts"
+                    >
                         <Bell size={16} />
                         {unreadCount > 0 && (
                             <span className="notif-badge">{unreadCount > 9 ? '9+' : unreadCount}</span>
