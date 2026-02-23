@@ -68,6 +68,10 @@ export const api = {
     },
 
     // ── Auth ───────────────────────────────
+    register: (email: string, password: string) =>
+        request<{ token: string; user: { id: string; email: string; role: string } }>('/auth/register', {
+            method: 'POST', body: JSON.stringify({ email, password }),
+        }),
     login: (email: string, password: string) =>
         request<{ token: string; user: { id: string; email: string; role: string } }>('/auth/login', {
             method: 'POST', body: JSON.stringify({ email, password }),

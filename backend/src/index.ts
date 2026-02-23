@@ -28,6 +28,12 @@ app.use(rateLimit({ windowMs: 60_000, max: 300, message: { error: 'Too many requ
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ extended: true, limit: '20mb' }));
 
+// ── Debug Logging ──────────────────────────────
+app.use((req, _res, next) => {
+    console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+    next();
+});
+
 // ── Health check ───────────────────────────────
 app.get('/health', (_req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 

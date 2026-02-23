@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import { Bell, Search, Play, Pause, Clock } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Bell, Search, Play, Pause, Clock, LogOut } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
+import { useAuth } from '../../context/AuthContext';
 import './TopBar.css';
 
 const ROUTE_TITLES: Record<string, string> = {
@@ -24,11 +25,15 @@ function useClock() {
 
 export default function TopBar() {
     const { pathname } = useLocation();
+    const navigate = useNavigate();
     const { alerts, inspectionsPaused, toggleInspections } = useApp();
+    const { user, logout } = useAuth();
     const [searchVal, setSearchVal] = useState('');
     const time = useClock();
     const unreadCount = alerts.filter(a => !a.acknowledged).length;
     const title = ROUTE_TITLES[pathname] ?? 'QC AI';
+
+    function handleLogout() { logout(); navigate('/login'); }
 
     return (
         <header className="topbar">
@@ -82,6 +87,32 @@ export default function TopBar() {
                         )}
                     </button>
                 </div>
+
+                {/* User avatar + logout */}
+                {user && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingLeft: 8, borderLeft: '1px solid var(--border)' }}>
+                        <div style={{ textAlign: 'right' }}>
+                            <div style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-primary)' }}>{user.email}</div>
+                            <div style={{ fontSize: '0.62rem', color: 'var(--accent-cyan)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{user.role}</div>
+                        </div>
+                        <div style={{
+                            width: 30, height: 30, borderRadius: '50%',
+                            background: 'linear-gradient(135deg, var(--accent-cyan), #6366f1)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '0.75rem', fontWeight: 700, color: '#fff', flexShrink: 0,
+                        }}>
+                            {user.email[0].toUpperCase()}
+                        </div>
+                        <button
+                            className="btn btn-icon btn-ghost"
+                            onClick={handleLogout}
+                            title="Sign out"
+                            style={{ color: 'var(--text-muted)' }}
+                        >
+                            <LogOut size={15} />
+                        </button>
+                    </div>
+                )}
             </div>
         </header>
     );

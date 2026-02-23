@@ -8,6 +8,7 @@ import type { Environment } from '../context/AppContext';
 import { useSimulatedFeed } from '../hooks/useLiveData';
 import { INITIAL_LINES, updateLines } from '../data/productionLines';
 import type { ProductionLine } from '../data/productionLines';
+import { useAuth } from '../context/AuthContext';
 import { generateHourlyData } from '../data/historicalData';
 import type { DefectEvent, Severity } from '../data/defectStream';
 
@@ -138,6 +139,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 };
 
 export default function Dashboard() {
+    const { user } = useAuth();
     const { environment, setEnvironment, productType, setProductType, recentDefects, totalInspections, alerts } = useApp();
     const [lines, setLines] = useState<ProductionLine[]>(INITIAL_LINES);
     const [hourlyData] = useState(() => generateHourlyData());
@@ -155,6 +157,14 @@ export default function Dashboard() {
     return (
         <div className="animate-page">
             {/* KPI Row */}
+            {user && (
+                <div style={{ marginBottom: 20 }}>
+                    <h2 style={{ fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                        Welcome back, <span style={{ color: 'var(--accent-cyan)' }}>{user.email.split('@')[0]}</span>
+                    </h2>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Here's the realtime production overview for {new Date().toLocaleDateString()}</p>
+                </div>
+            )}
             <div className="grid-4" style={{ marginBottom: 24 }}>
                 <KpiCard label="Total Inspections" value={totalInspections} icon={Eye} color="cyan" sub="Today across all lines" />
                 <KpiCard label="Defect Rate" value={defectRate.toFixed(1)} unit="%" icon={TrendingDown} color="yellow" sub="Avg. across active lines" />

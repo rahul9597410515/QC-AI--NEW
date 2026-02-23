@@ -60,7 +60,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
 const SENSOR_COLORS = ['#00D4FF', '#10B981', '#F59E0B', '#7C3AED', '#EF4444', '#F97316'];
 
 export default function SensorAlerts() {
-    const { readings, history } = useSensorStream(2000);
+    const { readings, history } = useSensorStream();
     const { alerts, acknowledgeAlert, dismissAlert } = useApp();
     const [visibleSensors, setVisibleSensors] = useState<Record<string, boolean>>({
         temperature: true, vibration: true, pressure: false, humidity: false, speed: true, current: false
